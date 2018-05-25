@@ -15,6 +15,7 @@ import java.util.Iterator;
  * 解析类似BizGlobalConfiguration 使用模板的XmltoJavaBean(Class c1,String xmlPath)方法
  * c1为传入Bean.Class,xmlPath为要解析的xml路径
  * 返回解析后的Object对象，可以强制转成你所传入的Bean对象
+ * 时间类型的xml节点的值要yyyy-dd-MM hh:mm:ss 以这样的规范才能解析正常
  * */
 
 public class XmlIterator {
@@ -102,7 +103,7 @@ public class XmlIterator {
                 } else if (type.equals("java.lang.String")) {
                     field[i].set(o, element.getStringValue());
                 }else  if(type.equals("java.util.Date")){
-                    field[i].set(o,new SimpleDateFormat().parse(element.getStringValue()));
+                    field[i].set(o,new SimpleDateFormat("yyyy-dd-MM hh:mm:ss").parse(element.getStringValue()));
                 }
             }
         }
