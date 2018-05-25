@@ -6,11 +6,16 @@ import org.dom4j.*;
 import org.dom4j.io.SAXReader;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
+import java.text.ParseException;
 import java.util.Iterator;
 import java.util.List;
+/*
+*要求解析的xml 的节点名称字母要和javabean里面的属性名称字母一致，大小写不敏感
+* 解析BizUnitVo模板的testIterator(Class c,String filePath)方法
+* c为传入Bean.Class,filePath为要解析的xml路径
+* 返回解析后的Object对象，可以强制转成你所传入的Bean对象
+* */
 
 public class IteratorAll {
     private static final String filePath="src/main/java/Model/BizUnit.xml";
@@ -18,17 +23,18 @@ public class IteratorAll {
     public static void main(String[] args) {
 //        findTag();
 //        tranAttributToString();
-        testIterator(BizUnitVo.class);
+        testIterator(BizUnitVo.class,filePath);
     }
 
-    public static void testIterator(Class c){
+    public static Object testIterator(Class c,String filePath){
         SAXReader saxReader=new SAXReader();
+        Class c1=c;
+        Object object=null;
         try {
             Document document=saxReader.read(new File(filePath));
             Element rootElement=document.getRootElement();
             Iterator<Element> iterator=rootElement.elementIterator();
-            Class c1=c;
-            Object object=c1.newInstance();
+            object=c1.newInstance();
             while(iterator.hasNext()){
                 Element element=iterator.next();
                 Iterator<Attribute> attributeIterator=element.attributeIterator();
@@ -38,10 +44,8 @@ public class IteratorAll {
                     Attribute attribute =attributeIterator.next();
                     Field field1=XmlIterator.classPostionInProperty(c1,element.getName());
                     Class<?> fieldClass=Class.forName(field1.getGenericType().getTypeName());
-                    System.out.println(fieldClass.getSimpleName());
                     String attributexml=tranAttributToString(element.asXML(),fieldClass);
                     Object objectAttribute=addAttributeToEmelment(attributexml,fieldClass);
-                    System.out.println(objectAttribute.toString()+"hashCode");
                     field1.setAccessible(true);
                     field1.set(object,objectAttribute);
 
@@ -68,21 +72,15 @@ public class IteratorAll {
                 while(iterator1.hasNext()){
                     element1=iterator1.next();
                     Iterator<Element> iterator2=element1.elementIterator();
-                    System.out.println(element1.getName()+element1.getStringValue());
                     if(iterator2.hasNext()&&element1.getParent()==element) {
-
-                        System.out.println("要加入的对象为" + element1.getName() + "的父节点为" + element.getName());
-
                         Field pageInfoField = XmlIterator.classPostionInProperty(c, element.getName());
-                        Class<?> pageInfoClass = pageInfoClass = Class.forName(pageInfoField.getGenericType().getTypeName());
+                        Class<?> pageInfoClass = Class.forName(pageInfoField.getGenericType().getTypeName());
                         Field pageInfoChildrenField = XmlIterator.classPostionInProperty(pageInfoClass, element1.getName());
                         Class<?> pageInfoChildrenClass = Class.forName(pageInfoChildrenField.getGenericType().getTypeName());
                         String pageInfoXml = XmlIterator.updateXml(pageInfoChildrenClass, element1.asXML());
                         XStream xStream = new XStream();
                         xStream.alias(pageInfoChildrenClass.getSimpleName(), pageInfoChildrenClass);
                         Object pageChildrenObject = xStream.fromXML(pageInfoXml);
-                        System.out.println(pageChildrenObject.toString() + "调试");
-//                        Constructor constructor=pageInfoClass.getConstructor();
                         if (constouctorObject == null) {
                             constouctorObject = pageInfoClass.newInstance();
                         } else {
@@ -96,7 +94,6 @@ public class IteratorAll {
                         }
                     }else{
                         if(element1.getParent()==element){
-                            System.out.println(element1.getName()+"我是另外的"+element1.getStringValue());
                             Field pageInfoField = XmlIterator.classPostionInProperty(c, element.getName());
                             Class<?> pageInfoClass = pageInfoClass = Class.forName(pageInfoField.getGenericType().getTypeName());
                             if (constouctorObject == null) {
@@ -113,15 +110,13 @@ public class IteratorAll {
                 while(iterator1.hasNext()){
                     element1=iterator1.next();
                     Field pageInfoField = XmlIterator.classPostionInProperty(c, element.getName());
-                    Class<?> pageInfoClass = pageInfoClass = Class.forName(pageInfoField.getGenericType().getTypeName());
+                    Class<?> pageInfoClass = Class.forName(pageInfoField.getGenericType().getTypeName());
                     Field pageInfoChildrenField = XmlIterator.classPostionInProperty(pageInfoClass, element1.getName());
                     Class<?> pageInfoChildrenClass = Class.forName(pageInfoChildrenField.getGenericType().getTypeName());
                     String pageInfoXml = XmlIterator.updateXml(pageInfoChildrenClass, element1.asXML());
                     XStream xStream = new XStream();
                     xStream.alias(pageInfoChildrenClass.getSimpleName(), pageInfoChildrenClass);
                     Object pageChildrenObject = xStream.fromXML(pageInfoXml);
-                    System.out.println(pageChildrenObject.toString() + "调试");
-//                        Constructor constructor=pageInfoClass.getConstructor();
                     if (constouctorObject == null) {
                         constouctorObject = pageInfoClass.newInstance();
                     } else {
@@ -137,7 +132,7 @@ public class IteratorAll {
                     break;
                 }
             }
-            System.out.println(object.toString());
+
         } catch (DocumentException e) {
             e.printStackTrace();
         }  catch (IllegalAccessException e) {
@@ -146,7 +141,10 @@ public class IteratorAll {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
+        return object;
     }
 
     public static String tranAttributToString(String xmlstr,Class c1){
